@@ -3,8 +3,11 @@ from django.db import models
 class Category(models.Model):
     name = models.CharField(max_length=100)
     slug = models.SlugField(unique=True)
+    parent = models.ForeignKey('self', on_delete=models.CASCADE, null=True, blank=True, related_name='subcategories')
 
     def __str__(self):
+        if self.parent:
+            return f"{self.parent} > {self.name}"
         return self.name
 
 class Product(models.Model):
