@@ -17,3 +17,4 @@ class ProductSerializer(serializers.ModelSerializer):
     class Meta:
         model = Product
         fields = '__all__'
+        read_only_fields = ('average_rating', 'review_count', 'positive_reviews', 'negative_reviews')

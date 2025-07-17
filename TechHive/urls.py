@@ -28,6 +28,7 @@ api_urlpatterns = [
     path('products/', include('products.urls')),
     path('cart/', include('cart.urls')),
      path('orders/', include('orders.urls')),
+      path('reviews/', include('reviews.urls')),
     # Add other app URLs here as they are c
     # reated
 ]

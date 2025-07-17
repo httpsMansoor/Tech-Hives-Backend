@@ -30,6 +30,13 @@ class CartViewSet(viewsets.GenericViewSet):
             
             try:
                 product = Product.objects.get(id=product_id)
+                if quantity > product.stock:
+                    results.append({
+                        'product_id': product_id,
+                        'status': 'failed',
+                        'error': f'Requested quantity ({quantity}) exceeds available stock ({product.stock})'
+                    })
+                    continue
                 cart_item, created = CartItem.objects.get_or_create(
                     cart=cart,
                     product=product,
@@ -37,6 +44,13 @@ class CartViewSet(viewsets.GenericViewSet):
                 )
                 
                 if not created:
+                    if cart_item.quantity + quantity > product.stock:
+                        results.append({
+                            'product_id': product_id,
+                            'status': 'failed',
+                            'error': f'Total quantity in cart ({cart_item.quantity + quantity}) exceeds available stock ({product.stock})'
+                        })
+                        continue
                     cart_item.quantity += quantity
                     cart_item.save()
                 
@@ -77,6 +91,13 @@ class CartViewSet(viewsets.GenericViewSet):
         for item_id, quantity in updates.items():
             try:
                 item = CartItem.objects.get(id=item_id, cart__user=request.user)
+                if quantity > item.product.stock:
+                    updated_items.append({
+                        'item_id': item_id,
+                        'status': 'failed',
+                        'error': f'Requested quantity ({quantity}) exceeds available stock ({item.product.stock})'
+                    })
+                    continue
                 if quantity <= 0:
                     item.delete()
                     action = 'deleted'
