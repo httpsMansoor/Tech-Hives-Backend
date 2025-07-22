@@ -182,9 +182,13 @@ if not DEBUG:
 # ======================
 # CORS CONFIGURATION
 # ======================
-CORS_ALLOW_ALL_ORIGINS = DEBUG  # Only allow all in development
+CORS_ALLOW_ALL_ORIGINS = DEBUG
+if not DEBUG:
+    CORS_ALLOWED_ORIGINS = [
+        "http://localhost:8081/",
+        "https://yourapp.railway.app"
+    ] # Only allow all in development
 CORS_ALLOW_CREDENTIALS = True
-CORS_ALLOWED_ORIGINS = os.getenv('CORS_ALLOWED_ORIGINS', '').split(',') or []
 CORS_ALLOW_METHODS = [
     'DELETE', 'GET', 'OPTIONS', 'PATCH', 'POST', 'PUT',
 ]
