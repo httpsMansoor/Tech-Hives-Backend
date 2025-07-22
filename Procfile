@@ -1,1 +1,1 @@
-web: uvicorn TECHHIVE.asgi:application --host=0.0.0.0 --port=${PORT}
+web: uvicorn TechHive.asgi:application --host=0.0.0.0 --port=${PORT}
