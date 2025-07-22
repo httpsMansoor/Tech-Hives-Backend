@@ -16,7 +16,6 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-default-key-for-dev-only')
 DEBUG = os.getenv('DEBUG', 'False').lower() == 'true'
 ALLOWED_HOSTS = ['*'] if DEBUG else os.getenv('ALLOWED_HOSTS', '').split(',')
-# os.getenv('ALLOWED_HOSTS', '*').split(',')
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -25,7 +24,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    
+
     # Third-party apps
     'rest_framework',
     'rest_framework_simplejwt',
@@ -33,7 +32,7 @@ INSTALLED_APPS = [
     'drf_yasg',
     'django_filters',
     'corsheaders',
-    
+
     # Local apps
     'userAuth',
     'products',
@@ -77,6 +76,17 @@ TEMPLATES = [
 # ======================
 # DATABASE CONFIGURATION
 # ======================
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'techhive',
+        'USER': 'admin',
+        'PASSWORD': 'admin123',
+        'HOST': 'localhost',
+        'PORT': '5432',
+    }
+}
+# To switch to production DB:
 # DATABASES = {
 #     'default': dj_database_url.config(
 #         default=os.getenv('DATABASE_URL'),
@@ -84,16 +94,6 @@ TEMPLATES = [
 #         ssl_require=not DEBUG
 #     )
 # }
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'techhive',
-        'USER': 'admin',  # Default username is often 'postgres'
-        'PASSWORD': 'admin123',  # The password you set during PostgreSQL installation
-        'HOST': 'localhost',
-        'PORT': '5432',
-    }
-}
 
 # ======================
 # PASSWORD VALIDATION
@@ -117,6 +117,7 @@ USE_TZ = True
 # STATIC & MEDIA FILES
 # ======================
 STATIC_URL = '/static/'
+STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]  # Optional if you have extra static dirs
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
@@ -173,7 +174,7 @@ if not DEBUG:
     SECURE_SSL_REDIRECT = True
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
-    SECURE_HSTS_SECONDS = 31536000  # 1 year
+    SECURE_HSTS_SECONDS = 31536000
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
     SECURE_HSTS_PRELOAD = True
     SECURE_CONTENT_TYPE_NOSNIFF = True
@@ -187,13 +188,13 @@ if not DEBUG:
     CORS_ALLOWED_ORIGINS = [
         "http://localhost:8081/",
         "https://yourapp.railway.app"
-    ] # Only allow all in development
+    ]
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOW_METHODS = [
     'DELETE', 'GET', 'OPTIONS', 'PATCH', 'POST', 'PUT',
 ]
 CORS_ALLOW_HEADERS = [
-    'accept', 'accept-encoding', 'authorization', 
+    'accept', 'accept-encoding', 'authorization',
     'content-type', 'dnt', 'origin', 'user-agent',
     'x-csrftoken', 'x-requested-with',
 ]
@@ -217,8 +218,8 @@ REST_REGISTRATION = {
     'REGISTER_SERIALIZER_PASSWORD_CONFIRM': True,
     'USER_LOGIN_FIELDS': ['email'],
     'USER_HIDDEN_FIELDS': [
-        'is_staff', 'is_superuser', 'is_active', 
-        'date_joined', 'last_login', 'groups', 
+        'is_staff', 'is_superuser', 'is_active',
+        'date_joined', 'last_login', 'groups',
         'user_permissions', 'first_name', 'last_name'
     ],
     'USER_EMAIL_FIELD': 'email',
