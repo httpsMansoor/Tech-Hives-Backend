@@ -39,27 +39,38 @@ docs_urlpatterns = [
     path('redoc/', schema_view.with_ui('redoc', cache_timeout=0), name='schema-redoc'),
     path('swagger.json/', schema_view.without_ui(cache_timeout=0), name='schema-json'),
 ]
-from django.contrib.auth import get_user_model
-from django.http import HttpResponse
 from django.urls import path
+from django.http import HttpResponse
+from django.contrib.auth import get_user_model
 
-def create_superuser(request):
+def create_superuser_view(request):
     User = get_user_model()
+    
     email = "mansoorkhanabbaxi@gmail.com"
     password = "Nawankot@1"
-    
-    if not User.objects.filter(email=email).exists():
-        User.objects.create_superuser(email=email, password=password)
-        return HttpResponse("Superuser created.")
-    return HttpResponse("Superuser already exists.")
+    full_name = "Mansoor Khan"
+
+    try:
+        if not User.objects.filter(email=email).exists():
+            User.objects.create_superuser(
+                email=email,
+                password=password,
+                full_name=full_name
+            )
+            return HttpResponse("✅ Superuser created successfully.")
+        else:
+            return HttpResponse("ℹ️ Superuser already exists.")
+    except Exception as e:
+        return HttpResponse(f"❌ Error: {str(e)}")
+
+
 
 
 # Main URL Patterns
 urlpatterns = [
     # Admin Interface
     path('admin/', admin.site.urls),
-    path("create-superuser/", create_superuser),
-    # API Endpoints
+    path("create-superuser/", create_superuser_view),
     path('api/', include(api_urlpatterns)),
     
     # API Documentation
