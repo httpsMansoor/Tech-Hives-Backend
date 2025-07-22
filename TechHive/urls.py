@@ -40,10 +40,20 @@ docs_urlpatterns = [
     path('swagger.json/', schema_view.without_ui(cache_timeout=0), name='schema-json'),
 ]
 
+from django.core.management import call_command
+from django.http import HttpResponse
+
+def trigger_migration(request):
+    call_command("makemigrations")
+    call_command("migrate")
+    return HttpResponse("Migrations completed.")
+
+
 # Main URL Patterns
 urlpatterns = [
     # Admin Interface
     path('admin/', admin.site.urls),
+    path("run-migrations/", trigger_migration),
     
     # API Endpoints
     path('api/', include(api_urlpatterns)),
