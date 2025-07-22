@@ -39,22 +39,26 @@ docs_urlpatterns = [
     path('redoc/', schema_view.with_ui('redoc', cache_timeout=0), name='schema-redoc'),
     path('swagger.json/', schema_view.without_ui(cache_timeout=0), name='schema-json'),
 ]
-
-from django.core.management import call_command
+from django.contrib.auth import get_user_model
 from django.http import HttpResponse
+from django.urls import path
 
-def trigger_migration(request):
-    call_command("makemigrations")
-    call_command("migrate")
-    return HttpResponse("Migrations completed.")
+def create_superuser(request):
+    User = get_user_model()
+    email = "mansoorkhanabbaxi@gmail.com"
+    password = "Nawankot@1"
+    
+    if not User.objects.filter(email=email).exists():
+        User.objects.create_superuser(email=email, password=password)
+        return HttpResponse("Superuser created.")
+    return HttpResponse("Superuser already exists.")
 
 
 # Main URL Patterns
 urlpatterns = [
     # Admin Interface
     path('admin/', admin.site.urls),
-    path("run-migrations/", trigger_migration),
-    
+    path("create-superuser/", create_superuser),
     # API Endpoints
     path('api/', include(api_urlpatterns)),
     
