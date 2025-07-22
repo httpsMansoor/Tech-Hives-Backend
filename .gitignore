@@ -20,6 +20,14 @@ staticfiles/
 .DS_Store
 Thumbs.db
 
-# Migrations
-**/migrations/*
-!**/migrations/__init__.py 
+# Local environments
+.venv/
+venv/
+env/
+
+# Coverage
+.coverage
+htmlcov/
+
+# Jupyter
+.ipynb_checkpoints/
