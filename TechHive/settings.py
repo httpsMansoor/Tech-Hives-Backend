@@ -21,7 +21,7 @@ SECRET_KEY = 'django-insecure-_xs9gv!yagk=47tvguanq8w$#^r%p=^wy954nr28336$)ub2@&
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['localhost', '127.0.0.1', '.ngrok-free.app']
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', '10.221.253.88','responding-dig-spent-virginia.trycloudflare.com', '.ngrok-free.app']
 
 
 # Application definition
@@ -87,10 +87,15 @@ WSGI_APPLICATION = 'TechHive.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'techhive',
+        'USER': 'admin',
+        'PASSWORD': 'admin123',
+        'HOST': 'localhost',
+        'PORT': '5432',
     }
 }
+
 
 
 # Password validation
@@ -192,7 +197,7 @@ REST_REGISTRATION = {
     'VERIFICATION_FROM_EMAIL': os.getenv('EMAIL_HOST_USER', 'noreply@techhive.com'),
     'SEND_RESET_PASSWORD_LINK_SERIALIZER_USE_EMAIL': True,
     'RESET_PASSWORD_VERIFICATION_ENABLED': True,
-    'RESET_PASSWORD_VERIFICATION_URL': 'http://localhost:3000/reset-password/set-new-password/',
+    'RESET_PASSWORD_VERIFICATION_URL': 'http://localhost:8081/auth/reset-password/',
     'RESET_PASSWORD_FAIL_WHEN_USER_NOT_FOUND': True,
     'LOGIN_SERIALIZER_CLASS': None,
     'REGISTER_SERIALIZER_CLASS': 'userAuth.serializers.UserRegistrationSerializer',
