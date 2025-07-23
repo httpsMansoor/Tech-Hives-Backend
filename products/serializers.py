@@ -13,8 +13,19 @@ class CategorySerializer(serializers.ModelSerializer):
         subs = obj.subcategories.all()
         return CategorySerializer(subs, many=True).data
 
+
 class ProductSerializer(serializers.ModelSerializer):
+    image = serializers.SerializerMethodField()
+
     class Meta:
         model = Product
         fields = '__all__'
-        read_only_fields = ('average_rating', 'review_count', 'positive_reviews', 'negative_reviews')
+        read_only_fields = (
+            'average_rating',
+            'review_count',
+            'positive_reviews',
+            'negative_reviews'
+        )
+
+    def get_image(self, obj):
+        return obj.image.url if obj.image else None
