@@ -5,6 +5,7 @@ from datetime import timedelta
 from dotenv import load_dotenv
 import cloudinary
 
+
 # Load environment variables
 load_dotenv()
 
@@ -86,6 +87,16 @@ DATABASES = {
         ssl_require=not DEBUG
     )
 }
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.postgresql',
+#         'NAME': 'techhive',
+#         'USER': 'admin',
+#         'PASSWORD': 'admin123',
+#         'HOST': 'localhost',
+#         'PORT': '5432',
+#     }
+# }
 
 # ======================
 # PASSWORD VALIDATION
