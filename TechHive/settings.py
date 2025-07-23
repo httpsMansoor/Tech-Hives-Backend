@@ -3,6 +3,7 @@ import dj_database_url
 from pathlib import Path
 from datetime import timedelta
 from dotenv import load_dotenv
+import cloudinary
 
 # Load environment variables
 load_dotenv()
@@ -32,6 +33,8 @@ INSTALLED_APPS = [
     'drf_yasg',
     'django_filters',
     'corsheaders',
+    'cloudinary',
+    'cloudinary_storage',
 
     # Local apps
     'userAuth',
@@ -76,8 +79,6 @@ TEMPLATES = [
 # ======================
 # DATABASE CONFIGURATION
 # ======================
-
-# To switch to production DB:
 DATABASES = {
     'default': dj_database_url.config(
         default=os.getenv('DATABASE_URL'),
@@ -105,14 +106,37 @@ USE_I18N = True
 USE_TZ = True
 
 # ======================
-# STATIC & MEDIA FILES
+# STATIC FILES (served by WhiteNoise)
 # ======================
 STATIC_URL = '/static/'
-STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]  # Optional if you have extra static dirs
+STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
+# ======================
+# CLOUDINARY MEDIA STORAGE
+# ======================
+DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
+
+CLOUDINARY_STORAGE = {
+    'CLOUD_NAME': os.getenv('CLOUDINARY_CLOUD_NAME'),
+    'API_KEY': os.getenv('CLOUDINARY_API_KEY'),
+    'API_SECRET': os.getenv('CLOUDINARY_API_SECRET'),
+    'UPLOAD_OPTIONS': {
+        'folder': 'techhive/products',
+    }
+}
+
+cloudinary.config(
+    cloud_name=os.getenv('CLOUDINARY_CLOUD_NAME'),
+    api_key=os.getenv('CLOUDINARY_API_KEY'),
+    api_secret=os.getenv('CLOUDINARY_API_SECRET'),
+    secure=True
+)
+
+# Optionally keep media URL
 MEDIA_URL = '/media/'
+# MEDIA_ROOT is unused with Cloudinary but defined for compatibility
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 # ======================
