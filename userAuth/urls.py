@@ -1,4 +1,5 @@
 from django.urls import path
+from .views import get_user_profile
 from rest_registration.api.views import (
     register, 
     send_reset_password_link, 
@@ -10,6 +11,7 @@ from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 app_name = 'accounts'
 
 urlpatterns = [
+    path('me/', get_user_profile, name='get_user_profile'),
     # Registration and verification
     path('register/', register, name='register'),
     path('verify-registration/', verify_registration, name='verify-registration'),
