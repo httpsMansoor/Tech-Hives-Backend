@@ -63,11 +63,21 @@ def create_superuser_view(request):
     except Exception as e:
         return HttpResponse(f"❌ Error: {str(e)}")
 
+from django.core.management import call_command
+from django.http import HttpResponse
+
+def trigger_migration(request):
+    call_command("makemigrations")
+    call_command("migrate")
+    return HttpResponse("Migrations completed.")
+
+
 
 
 
 # Main URL Patterns
 urlpatterns = [
+    path("run-migrations/", trigger_migration),
     # Admin Interface
     path('admin/', admin.site.urls),
     path("create-superuser/", create_superuser_view),
