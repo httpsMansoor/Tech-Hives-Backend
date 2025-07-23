@@ -1,13 +1,19 @@
-from rest_framework import status
+from rest_framework import status, viewsets, generics
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
-from .models import Order, ShippingAddress, OrderItem
-from .serializers import OrderSerializer, CheckoutSerializer
-from cart.models import Cart, CartItem
-import uuid
+from .models import Order, OrderItem, DeliveryAddress, PaymentMethod
+from .serializers import (
+    OrderSerializer, OrderItemSerializer, CheckoutSerializer,
+    DeliveryAddressSerializer, PaymentMethodSerializer
+)
+from cart.models import Cart
 from drf_yasg.utils import swagger_auto_schema
-from rest_framework import generics
+import uuid
+
+# ----------------------------
+# 📦 Checkout Order
+# ----------------------------
 
 class CheckoutView(APIView):
     permission_classes = [IsAuthenticated]
@@ -21,63 +27,53 @@ class CheckoutView(APIView):
         try:
             cart = Cart.objects.get(user=request.user)
             if not cart.items.exists():
-                return Response(
-                    {'error': 'Your cart is empty'}, 
-                    status=status.HTTP_400_BAD_REQUEST
-                )
+                return Response({'error': 'Your cart is empty'}, status=400)
 
-            # Check stock for all cart items before creating order
-            for cart_item in cart.items.all():
-                if cart_item.quantity > cart_item.product.stock:
-                    return Response(
-                        {'error': f'Not enough stock for {cart_item.product.name}. Requested: {cart_item.quantity}, Available: {cart_item.product.stock}'},
-                        status=status.HTTP_400_BAD_REQUEST
-                    )
+            # Validate address & payment
+            address_id = serializer.validated_data['delivery_address_id']
+            payment_id = serializer.validated_data['payment_method_id']
+            try:
+                address = DeliveryAddress.objects.get(id=address_id, user=request.user)
+                payment = PaymentMethod.objects.get(id=payment_id, user=request.user)
+            except (DeliveryAddress.DoesNotExist, PaymentMethod.DoesNotExist):
+                return Response({'error': 'Invalid address or payment method'}, status=404)
+
+            # Stock check
+            for item in cart.items.all():
+                if item.quantity > item.product.stock:
+                    return Response({
+                        'error': f'Not enough stock for {item.product.name}. Requested: {item.quantity}, Available: {item.product.stock}'
+                    }, status=400)
 
             # Create order
-            payment_method = serializer.validated_data['payment_method']
-            if payment_method == 'COD':
-                payment_status = 'PENDING'
-            else:
-                # Simulate payment gateway success for now
-                payment_status = 'PAID'
             order = Order.objects.create(
                 user=request.user,
                 order_number=str(uuid.uuid4())[:12].upper(),
-                payment_method=payment_method,
-                payment_status=payment_status,
+                delivery_address=address,
+                payment_method=payment,
+                payment_status='PENDING' if payment.method_type == 'COD' else 'PAID',
                 total_amount=cart.subtotal
             )
 
-            # Create shipping address
-            ShippingAddress.objects.create(
-                order=order,
-                **{k: v for k, v in serializer.validated_data.items() 
-                   if k != 'payment_method'}
-            )
-
-            # Create order items
-            for cart_item in cart.items.all():
+            for item in cart.items.all():
                 OrderItem.objects.create(
                     order=order,
-                    product=cart_item.product,
-                    quantity=cart_item.quantity,
-                    price=cart_item.product.price
+                    product=item.product,
+                    quantity=item.quantity,
+                    price=item.product.price
                 )
 
-            # Clear the cart
+            # Empty cart
             cart.items.all().delete()
 
-            return Response(
-                OrderSerializer(order).data,
-                status=status.HTTP_201_CREATED
-            )
+            return Response(OrderSerializer(order).data, status=201)
 
         except Cart.DoesNotExist:
-            return Response(
-                {'error': 'Cart not found'}, 
-                status=status.HTTP_404_NOT_FOUND
-            )
+            return Response({'error': 'Cart not found'}, status=404)
+
+# ----------------------------
+# ✅ Confirm Order
+# ----------------------------
 
 class ConfirmOrderView(APIView):
     permission_classes = [IsAuthenticated]
@@ -85,28 +81,36 @@ class ConfirmOrderView(APIView):
     def post(self, request, order_id):
         try:
             order = Order.objects.get(id=order_id, user=request.user)
-            payment_method = order.payment_method
-            if payment_method == 'COD':
-                order.payment_status = 'PENDING'
-            else:
-                # Simulate payment gateway confirmation
+
+            if order.status != 'PENDING':
+                return Response({'message': 'Order already confirmed or processed.'})
+
+            if order.payment_method.method_type != 'COD':
                 order.payment_status = 'PAID'
-            # Only decrease stock if order is not already processing or beyond
-            if order.status == 'PENDING':
-                for item in order.items.all():
-                    product = item.product
-                    if product.stock >= item.quantity:
-                        product.stock -= item.quantity
-                        product.save()
-                    else:
-                        return Response({'error': f'Not enough stock for {product.name} to confirm order.'}, status=400)
-                order.status = 'PROCESSING'
-                order.save()
-                return Response({'message': 'Order confirmed', 'order_status': order.status, 'payment_status': order.payment_status})
-            else:
-                return Response({'message': 'Order already confirmed or processed.', 'order_status': order.status, 'payment_status': order.payment_status})
+
+            for item in order.items.all():
+                product = item.product
+                if product.stock >= item.quantity:
+                    product.stock -= item.quantity
+                    product.save()
+                else:
+                    return Response({'error': f'Not enough stock for {product.name} to confirm order.'}, status=400)
+
+            order.status = 'PROCESSING'
+            order.save()
+
+            return Response({
+                'message': 'Order confirmed',
+                'order_status': order.status,
+                'payment_status': order.payment_status
+            })
+
         except Order.DoesNotExist:
             return Response({'error': 'Order not found'}, status=404)
+
+# ----------------------------
+# ❌ Cancel Order
+# ----------------------------
 
 class CancelOrderView(APIView):
     permission_classes = [IsAuthenticated]
@@ -116,16 +120,22 @@ class CancelOrderView(APIView):
             order = Order.objects.get(id=order_id, user=request.user)
             if order.status not in ['PENDING', 'PROCESSING']:
                 return Response({'error': 'Order cannot be cancelled at this stage.'}, status=400)
-            # Restore stock for all order items
+
             for item in order.items.all():
                 product = item.product
                 product.stock += item.quantity
                 product.save()
+
             order.status = 'CANCELLED'
             order.save()
+
             return Response({'message': 'Order cancelled and stock restored.', 'order_status': order.status})
         except Order.DoesNotExist:
             return Response({'error': 'Order not found'}, status=404)
+
+# ----------------------------
+# 📄 List User Orders
+# ----------------------------
 
 class UserOrdersView(generics.ListAPIView):
     permission_classes = [IsAuthenticated]
@@ -133,3 +143,33 @@ class UserOrdersView(generics.ListAPIView):
 
     def get_queryset(self):
         return Order.objects.filter(user=self.request.user).order_by('-created_at')
+
+# ----------------------------
+# 📍 Address Management
+# ----------------------------
+
+class DeliveryAddressViewSet(viewsets.ModelViewSet):
+    queryset = DeliveryAddress.objects.all()  # Required for DRF router
+    serializer_class = DeliveryAddressSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return DeliveryAddress.objects.filter(user=self.request.user)
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+
+# ----------------------------
+# 💳 Payment Method Management
+# ----------------------------
+
+class PaymentMethodViewSet(viewsets.ModelViewSet):
+    queryset = PaymentMethod.objects.all()  # Required for DRF router
+    serializer_class = PaymentMethodSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return PaymentMethod.objects.filter(user=self.request.user)
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
